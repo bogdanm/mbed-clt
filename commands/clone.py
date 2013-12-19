@@ -96,7 +96,7 @@ class CmdClone(Command):
         gen_private_settings()
         # Now create list of files/dirs that will be ignored in the repo
         hgi = HgIgnore()
-        hgi.add([cfg_fname, "mbed_settings.py", ".build", ".export"])
+        hgi.add([cfg_fname, "mbed_settings.py*", ".build", ".export"])
         hgi.sync()
         # Setup repository data in the sync file
         MbedProject.write_repo_info(rlist, repo_name(mbedrepo))
