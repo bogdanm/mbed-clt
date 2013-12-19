@@ -43,5 +43,8 @@ def run(args):
 # Entry point
 
 if __name__ == "__main__":
-    set_project_dir(find_mbed_dir())
+    base = find_mbed_dir()
+    if base:
+        set_project_dir(base)
+        sys.path.append(base)
     run(sys.argv[1:])
