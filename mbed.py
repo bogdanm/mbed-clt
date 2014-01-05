@@ -23,7 +23,7 @@ def run(args):
     if is_mbed_dir():
         cmds = cmds + [CmdCompile(), CmdList()]
     else:
-        cmds = cmds = [CmdClone()]
+        cmds = cmds + [CmdClone()]
     if len(args) == 0:
         error("No command given.")
         help_and_exit(cmds)
