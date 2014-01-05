@@ -3,10 +3,11 @@
 import os
 from utils.helpers import hg_walk, parse_mbed_file, basedir, rel_path, hg_clone
 from utils.config import cfg
+from utils import get_project_dir
 
 class MbedProject(object):
-    def __init__(self, where):
-        self.where = where
+    def __init__(self, where = None):
+        self.where = where or get_project_dir()
 
     def clone(self, cloned = {}):
         rlist = []
@@ -36,7 +37,7 @@ class MbedProject(object):
         return rlist
 
     @staticmethod
-    def write_repo_info(rlist, repo_name, conf = None):
+    def write_repo_info(repo_name, rlist, conf = None):
         conf = conf or cfg
         conf.set("repo.n_repos", len(rlist))
         conf.set("repo.name", repo_name)

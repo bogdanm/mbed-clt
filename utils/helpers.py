@@ -3,6 +3,7 @@ from os.path import isdir, join, exists, abspath, splitext, split, relpath, norm
 from subprocess import call, check_output, CalledProcessError
 from constants import cfg_fname, mbed_builds_base
 from utils import get_project_dir
+import urllib
 
 try:
     from colorama import init as cl_init
@@ -175,13 +176,32 @@ def rel_path(p):
 def full_path(p):
     return normpath(join(get_project_dir(), p))
 
-def get_new_url(where, rev):
-    main_url, _ = parse_mbed_file(where)
-    return ("%s#%s" % (main_url, rev)).replace('//', '/')
+def repo_name_to_url(mbedrepo):
+    from utils.config import cfg
+    repo_url_pattern = "http://mbed.org/users/%s/code/%s/"
+    if not mbedrepo.startswith("http"): # actual URL
+        if not cfg.get("username"):
+            error("Username not specified, cannot build URL.")
+            error("Use 'mbed set --global username=<name>' to set username.")
+            return False
+        mbedrepo = repo_url_pattern % (cfg.get("username"), mbedrepo)
+    if not mbedrepo.endswith('/'):
+        mbedrepo = mbedrepo + '/'
+    return mbedrepo
 
-def make_lib_file(where, rev):
-    new_url = get_new_url(where, rev)
-    urlf = open(where, 'w')
-    urlf.write(new_url)
-    urlf.close()
+def is_url_live(url):
+    return urllib.urlopen(url).getcode() == 200
+
+def get_hg_tip_revision(d = None):
+    crtdir = os.getcwd()
+    d = d or crtdir
+    os.chdir(d)
+    res = silent_exec(['hg', 'log', '-r', 'tip']).replace('\r', '').replace(' ', '').replace('\t', '')
+    res = res.split('\n')[0]
+    if res.find("changeset:") != 0:
+        error("Internal error in get_hg_tip_revision")
+        os._exit(1)
+    res = res[len("changeset:"):].split(':')[1]
+    os.chdir(crtdir)
+    return res
 

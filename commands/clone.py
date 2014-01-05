@@ -1,6 +1,7 @@
 from commands.command import Command
 from utils.config import cfg
 from utils.helpers import is_hg_dir, parse_hg_url, hg_clone, error, info, repo_name, gen_private_settings
+from utils.helpers import repo_name_to_url
 from utils.project import MbedProject
 from constants import cfg_fname
 from os.path import exists, abspath, join
@@ -62,18 +63,14 @@ class CmdClone(Command):
     def __call__(self, args):
         if len(args) == 0 or len(args) > 2:
             return None
-        mbedrepo = args[0]
         if is_hg_dir():
             error("This directory already contains a mercurial repository.")
             error("Please clone in a directory that doesn't contain a mercurial repository.")
             return False
-        if not mbedrepo.startswith("http"): # actual URL
-            if not cfg.get("username"):
-                error("Username not specified, cannot build URL.")
-                error("Use 'mbed set --global username=<name>' to set username.")
-                return False
-            mbedrepo = self.repo_url_pattern % (cfg.get("username"), mbedrepo)
-            info("Using '%s' as the URL to clone" % mbedrepo)
+        mbedrepo = repo_name_to_url(args[0])
+        if mbedrepo == False:
+            return False
+        info("Using '%s' as the URL to clone" % mbedrepo)
         if len(args) == 2:
             dirname = args[1]
         else:
@@ -99,6 +96,6 @@ class CmdClone(Command):
         hgi.add([cfg_fname, "mbed_settings.py*", ".build", ".export"])
         hgi.sync()
         # Setup repository data in the sync file
-        MbedProject.write_repo_info(rlist, repo_name(mbedrepo))
+        MbedProject.write_repo_info(repo_name(mbedrepo), rlist)
         info("Cloned %s into %s" % (mbedrepo, os.getcwd()))
         return True
