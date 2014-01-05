@@ -8,6 +8,7 @@ from commands.clone import CmdClone
 from commands.compile import CmdCompile
 from commands.list import CmdList
 from commands.add import CmdAdd
+from commands.deps import CmdDeps
 
 ################################################################################
 # Local functions
@@ -22,7 +23,7 @@ def help_and_exit(cmds):
 def run(args):
     cmds = [CmdSet(), CmdGet()]
     if is_mbed_dir():
-        cmds = cmds + [CmdCompile(), CmdList(), CmdAdd()]
+        cmds = cmds + [CmdCompile(), CmdList(), CmdAdd(), CmdDeps()]
     else:
         cmds = cmds + [CmdClone()]
     if len(args) == 0:

@@ -1,7 +1,7 @@
 # mbed project related operations
 
 import os
-from utils.helpers import hg_walk, parse_mbed_file, basedir, rel_path, hg_clone
+from utils.helpers import hg_walk, parse_mbed_file, basedir, rel_path, hg_clone, repo_name
 from utils.config import cfg
 from utils import get_project_dir
 
@@ -56,3 +56,22 @@ class MbedProject(object):
             rfile = conf.get("repo.file_%d" % i)
             rlist.append({"url": rurl, "dir": rdir, "file": rfile})
         return conf.get("repo.name"), rlist
+
+    @staticmethod
+    def get_repo_deps():
+        rname, rlist = MbedProject.read_repo_info()
+        rlist.sort(key=lambda e : 0 if e["dir"] == "." else e["dir"].count('/') + 1)
+        main_repo = repo_name(rlist[0]["url"])
+        deps = dict([(main_repo, [])])
+        for r in rlist[1:]:
+            d = r["dir"]
+            if d.find('/') == -1:
+                deps[main_repo].append(d)
+            else:
+                data = d.split('/')
+                repo, dep = data[-2], data[-1]
+                if deps.has_key(repo):
+                    deps[repo].append(dep)
+                else:
+                    deps[repo] = [dep]
+        return main_repo, deps
