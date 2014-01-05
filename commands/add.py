@@ -11,10 +11,10 @@ class CmdAdd(Command):
         Command.__init__(self, "add")
 
     def get_help(self):
-        return "add <repo> [dirname] - adds the given repository (and clones it)"
+        return "add <repo> - adds the given repository (and clones it)"
 
     def __call__(self, args):
-        if len(args) == 0 or len(args) > 2:
+        if len(args) != 1:
             return None
         if not is_mbed_dir():
             error("Run this command from a mbed project directory.")
@@ -24,14 +24,11 @@ class CmdAdd(Command):
         if not is_url_live(mbedrepo):
             error("Unable to access URL '%s'." % mbedrepo)
             return False
-        if len(args) == 2:
-            dirname = args[1]
-        else:
-            dirname, _ = parse_hg_url(mbedrepo)
+        dirname, _ = parse_hg_url(mbedrepo)
+        dirname = abspath(dirname)
         if exists(dirname):
             error("'%s' already exists, choose another directory." % dirname)
             return False
-        dirname = abspath(dirname)
         # Create library file in the given directory
         libfname = join(os.getcwd(), repo_name(mbedrepo) + ".lib")
         if exists(libfname):
