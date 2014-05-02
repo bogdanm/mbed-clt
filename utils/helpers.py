@@ -4,6 +4,7 @@ from subprocess import call, check_output, CalledProcessError
 from constants import cfg_fname, mbed_builds_base
 from utils import get_project_dir
 import urllib
+import hgapi
 
 try:
     from colorama import init as cl_init
@@ -33,26 +34,6 @@ def cmd_output(text, stream = sys.stdout):
     from utils.config import cfg
     print_color(text, cfg.get("cmd_output_color"), stream = stream)
 
-def exec_helper(cmd, check = True):
-    if type(cmd) == type([]):
-        cmd = ' '.join(cmd)
-    res = call(cmd, shell = False, cwd = os.getcwd())
-    if check and res != 0:
-        return False
-    return True
-
-def silent_exec(cmdline):
-    try:
-        output = check_output(cmdline)
-    except CalledProcessError as e:
-        if len(e.output.split()) > 0:
-            error("Error executing '%s', error message below.\n" % cmdline[0])
-            error("\n".join([">> " + l for l in e.output.split("\n")]))
-        else:
-            error("Error executing '%s'.\n" % cmdline[0])
-        os._exit(1)
-    return output      
-
 def parse_hg_url(url):
     if not url.endswith('/'):
         url = url + '/'
@@ -72,7 +53,9 @@ def hg_clone(url, dirname = None, revision = None, basedir = None):
                 break
             idx = idx + 1
     info("[%s] -> %s... (%s) %s" % (url, abspath(dirname), revision or "default", ("(renamed from '%s' to '%s')" % (initial, dirname)) if renamed else ""))
-    if not exec_helper(['hg', 'clone', url, dirname, '-u', revision or "default"]):
+    try:
+        hgapi.hg_clone(url, dirname, '-u', revision or "default")
+    except hgapi.HgException:
         error("Error running 'hg clone', aborting.")
         os._exit(1)
     return abspath(dirname)
@@ -193,15 +176,10 @@ def is_url_live(url):
     return urllib.urlopen(url).getcode() == 200
 
 def get_hg_tip_revision(d = None):
-    crtdir = os.getcwd()
-    d = d or crtdir
-    os.chdir(d)
-    res = silent_exec(['hg', 'log', '-r', 'tip']).replace('\r', '').replace(' ', '').replace('\t', '')
-    res = res.split('\n')[0]
-    if res.find("changeset:") != 0:
-        error("Internal error in get_hg_tip_revision")
+    d = d or os.getcwd()
+    try:
+        repo = hgapi.Repo(d)
+        return repo['tip'].node
+    except hg.HgException:
+        error("Cannot get tip revision for repository '%s'" % d)
         os._exit(1)
-    res = res[len("changeset:"):].split(':')[1]
-    os.chdir(crtdir)
-    return res
-
